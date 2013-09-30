@@ -10,65 +10,72 @@
 }
 
 - (id)initWithFrame:(CGRect)frame{
-    if(self = [super initWithFrame:frame]){
+    if(self = [super initWithFrame:frame]) {
+        [self viewJustLoaded];
     }
-    
+
     return  self;
 }
 
 -(void) viewJustLoaded {
-	NSLog(@"viewJustLoaded");
     [self setBackgroundColor:[UIColor whiteColor]];
-    
+
     self.layer.borderWidth = 2.0;
     self.layer.borderColor= [[UIColor redColor] CGColor];
-    
+
     self.opaque=false;
-    
-	
+
+
 	self.arrayStrokes = [NSMutableArray array];
 	self.arrayAbandonedStrokes = [NSMutableArray array];
 	self.currentSize = 5.0;
-	[self setColor:[UIColor redColor]];
-}
+    self.currentColor = [UIColor redColor];
 
--(void) setColor:(UIColor*)theColor {
-	self.currentColor = theColor;
+    self.captureTouches = NO;
 }
 
 
 // Start new dictionary for each touch, with points and color
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	
+    if (!self.captureTouches) {
+        [super touchesBegan:touches withEvent:event];
+        return;
+    }
+
 	NSMutableArray *arrayPointsInStroke = [NSMutableArray array];
 	NSMutableDictionary *dictStroke = [NSMutableDictionary dictionary];
 	[dictStroke setObject:arrayPointsInStroke forKey:@"points"];
 	[dictStroke setObject:self.currentColor forKey:@"color"];
 	[dictStroke setObject:[NSNumber numberWithFloat:self.currentSize] forKey:@"size"];
-	
-    
+
+
 	CGPoint point = [[touches anyObject] locationInView:self]; //ktl delete
 	[arrayPointsInStroke addObject:NSStringFromCGPoint(point)]; // ktl delete
-	
+
 	[self.arrayStrokes addObject:dictStroke];
-    
+
     //to add page no here
 }
 
 // Add each point to points array
 - (void) touchesMoved:(NSSet *) touches withEvent:(UIEvent *) event
 {
+    if (!self.captureTouches) {
+        [super touchesBegan:touches withEvent:event];
+        return;
+    }
+
 	CGPoint point = [[touches anyObject] locationInView:self];
 	CGPoint prevPoint = [[touches anyObject] previousLocationInView:self];
 	NSMutableArray *arrayPointsInStroke = [[self.arrayStrokes lastObject] objectForKey:@"points"];
 	[arrayPointsInStroke addObject:NSStringFromCGPoint(point)];
-	
-	CGRect rectToRedraw = CGRectMake(\
-									 ((prevPoint.x>point.x)?point.x:prevPoint.x)-currentSize,\
-									 ((prevPoint.y>point.y)?point.y:prevPoint.y)-currentSize,\
-									 fabs(point.x-prevPoint.x)+2*currentSize,\
-									 fabs(point.y-prevPoint.y)+2*currentSize\
+
+	CGRect rectToRedraw = CGRectMake(
+									 ((prevPoint.x>point.x)?point.x:prevPoint.x)-currentSize,
+									 ((prevPoint.y>point.y)?point.y:prevPoint.y)-currentSize,
+									 fabs(point.x-prevPoint.x)+2*currentSize,
+									 fabs(point.y-prevPoint.y)+2*currentSize
 									 );
 	[self setNeedsDisplayInRect:rectToRedraw];
 }
@@ -77,6 +84,12 @@
 // Send over new trace when the touch ends
 - (void) touchesEnded:(NSSet *) touches withEvent:(UIEvent *) event
 {
+    if (!self.captureTouches)
+    {
+        [super touchesBegan:touches withEvent:event];
+        return;
+    }
+
 	[self.arrayAbandonedStrokes removeAllObjects];
 }
 
@@ -86,8 +99,8 @@
 // Draw all points, foreign and domestic, to the screen
 - (void) drawRect: (CGRect) rect
 {
-   // NSLog(@"drawrect here 1");
-    
+    // NSLog(@"drawrect here 1");
+
 	if (self.arrayStrokes)
 	{
 		int arraynum = 0;
@@ -99,13 +112,13 @@
 			UIColor *color = [dictStroke objectForKey:@"color"];
 			float size = [[dictStroke objectForKey:@"size"] floatValue];
 			[color set];		// equivalent to both setFill and setStroke
-			
+
             //			// won't draw a line which is too short
             //			if (arrayPointsInstroke.count < 3)	{
             //				arraynum++;
             //				continue;		// if continue is executed, the program jumps to the next dictStroke
             //			}
-			
+
 			// draw the stroke, line by line, with rounded joints
 			UIBezierPath* pathLines = [UIBezierPath bezierPath];
 			CGPoint pointStart = CGPointFromString([arrayPointsInstroke objectAtIndex:0]);
@@ -119,7 +132,7 @@
 			pathLines.lineJoinStyle = kCGLineJoinRound;
 			pathLines.lineCapStyle = kCGLineCapRound;
 			[pathLines stroke];
-			
+
 			arraynum++;
 		}
 	}
